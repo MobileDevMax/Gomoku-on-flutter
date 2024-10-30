@@ -1,0 +1,130 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(GomokuApp());
+}
+
+class GomokuApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Gomoku',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: GomokuGame(),
+    );
+  }
+}
+
+class GomokuGame extends StatefulWidget {
+  @override
+  _GomokuGameState createState() => _GomokuGameState();
+}
+
+class _GomokuGameState extends State<GomokuGame> {
+  final int size = 15;
+  List<List<int>> board = List.generate(15, (_) => List.filled(15, 0));
+  int currentPlayer = 1;
+  bool gameEnded = false;
+
+  void resetGame() {
+    setState(() {
+      board = List.generate(15, (_) => List.filled(15, 0));
+      currentPlayer = 1;
+      gameEnded = false;
+    });
+  }
+
+  void makeMove(int row, int col) {
+    if (!gameEnded && board[row][col] == 0) {
+      setState(() {
+        board[row][col] = currentPlayer;
+        if (checkWin(row, col)) {
+          gameEnded = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text('Player $currentPlayer win!'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); 
+                    resetGame(); 
+                  },
+                  child: Text('Play again'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          currentPlayer = 3 - currentPlayer; 
+        }
+      });
+    }
+  }
+
+  bool checkWin(int row, int col) {
+    return checkDirection(row, col, 1, 0) || 
+           checkDirection(row, col, 0, 1) || 
+           checkDirection(row, col, 1, 1) || 
+           checkDirection(row, col, 1, -1);  
+  }
+
+  bool checkDirection(int row, int col, int rowDir, int colDir) {
+    int count = 1; 
+
+    count += countInDirection(row, col, rowDir, colDir);
+    count += countInDirection(row, col, -rowDir, -colDir);
+
+    return count >= 5;
+  }
+
+  int countInDirection(int row, int col, int rowDir, int colDir) {
+    int count = 0;
+    int player = board[row][col];
+    int newRow = row + rowDir;
+    int newCol = col + colDir;
+
+    while (newRow >= 0 && newRow < size && newCol >= 0 && newCol < size && board[newRow][newCol] == player) {
+      count++;
+      newRow += rowDir;
+      newCol += colDir;
+    }
+    return count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Gomoku')),
+      body: Container(
+        color: Colors.grey[300], 
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: size),
+                itemCount: size * size,
+                itemBuilder: (context, index) {
+                  int row = index ~/ size;
+                  int col = index % size;
+                  return GestureDetector(
+                    onTap: () => makeMove(row, col),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(),
+                        color: board[row][col] == 1 ? Colors.black : (board[row][col] == 2 ? Colors.white : Colors.transparent),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            ElevatedButton(onPressed: resetGame, child: Text('Reset the game')),
+          ],
+        ),
+      ),
+    );
+  }
+}
